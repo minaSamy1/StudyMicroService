@@ -1,0 +1,26 @@
+1- create CustomExceptionClass Extend from RunTimeException
+2- Create The ErrorClass which it's attribute need to appear in the exception message  
+3- create CustomEnityResponseClass Extend from ResponseEntityHandleException   ( @ControllerAdvice , @ExceptionalHandler)
+
+
+
+Steps to fire customException 
+
+1- in controller or service or any layer  
+ 
+    Throw new  CustomExceptionClass ( " my messge to appear ) 
+
+
+2- ErrorClass   : handle and put the message you want to appear 
+                    by using the class you defined before  (ErrorClass )
+
+           kindly note this class can you to handle and exception appear in the spring 
+           incase you have customExceptio or general Exception 
+          
+    important  -->>> for each type of exception we define @ExceptionalHandle(---.class )
+                        and define the httpCode for it 
+
+
+kindly check the code for each step from step    11 , 12  
+
+URL  : https://github.com/in28minutes/spring-microservices-v2/blob/main/02.restful-web-services/01-step-by-step-changes/v2.md
