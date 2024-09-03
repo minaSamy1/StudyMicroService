@@ -1,0 +1,31 @@
+1-  
+		<dependency>
+			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-xml</artifactId>
+		</dependency>
+
+
+2-  if you neeed to get repsonse in  xml format for example  edit in the Header 
+          
+          Accept : application/xml
+         Content-Type : application/xml
+
+ http://localhost:8080/users
+
+ <List>
+    <item>
+        <id>1</id>
+        <name>mina samy</name>
+        <birthDate>1994-05-09</birthDate>
+    </item>
+    <item>
+        <id>2</id>
+        <name>helana melad </name>
+        <birthDate>1994-05-09</birthDate>
+    </item>
+    <item>
+        <id>3</id>
+        <name>Stavros mina</name>
+        <birthDate>1994-05-09</birthDate>
+    </item>
+</List>

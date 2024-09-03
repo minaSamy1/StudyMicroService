@@ -1,0 +1,34 @@
+1- create ConfigServer  
+   add dependency  
+   
+  		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-config-server</artifactId>
+		</dependency>
+		
+		
+  - adding Annotion
+			@EnableConfigServer   in main class
+	  
+  - application.properities
+        ### defining the GIT REPO
+			spring.cloud.config.server.git.uri=https://github.com/minaSamy1/Configuration.git  /// will get the file from the repo
+			spring.cloud.config.server.git.clone-on-start=true
+			spring.cloud.config.server.git.default-label=main   /// get from branch main
+			
+			
+	------------------------------ in Client Project  -----------------
+	
+	1- add dependency 
+	
+	     <dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-starter-config</artifactId>
+		</dependency>
+		
+		
+	2- in application.properities
+	
+	  spring.config.import= optional:configserver:http://localhost:9296    // get the configuration from the our congfig server
+       spring.cloud.config.profile=dev   /// need to work in file application-dev.properities
+		

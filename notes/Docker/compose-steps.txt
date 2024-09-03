@@ -1,0 +1,16 @@
+1-  to run compose file 
+   docker-compose -f docker-compose-01-ces.yaml up
+
+
+2- to stop docker compose
+  	docker-compose down   
+  This will stop and remove all containers defined in your docker-compose.yml file
+
+
+3- to stop any running container 
+     docker container stop abcdef123456
+     docker container stop abcdef123456 3dsa3  54dd3s
+
+
+4- to remove all stoped containers
+  docker container prune -f

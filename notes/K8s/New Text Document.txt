@@ -1,0 +1,5 @@
+- the main steps in K8s is to Know
+   1- how to run the deployment from your Project image 
+   2- how to scale the deployment if you need more instance 
+   3- how to make the MicroServices depend on Service of the k8s of the running deployment 
+           by depend on ( environment varaible in YAML )

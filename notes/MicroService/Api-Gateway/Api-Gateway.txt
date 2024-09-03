@@ -1,0 +1,106 @@
+
+
+1- Create new project 
+    - dependency   >>>>>>>> takecare because if you add the gateway from spring.initalizer it add Wrong ( gateway-mvc )
+
+             <dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-gateway</artifactId>
+		</dependency>
+
+
+
+  - we can configure the routes in manyways 
+   
+   1- application.properities 
+      
+	spring.cloud.gateway.routes[0].id=PRODUCT-SERVICE
+	spring.cloud.gateway.routes[0].uri=lb://PRODUCT-SERVICE          ...> which is the name of the services in Eurka
+	spring.cloud.gateway.routes[0].predicates[0].name=Path
+	spring.cloud.gateway.routes[0].predicates[0].args[pattern]=/product/**     ...>  /// the route will be ip/product /****
+
+
+   spring.cloud.gateway.routes[1].id=ORDERSERVICE
+   spring.cloud.gateway.routes[1].uri=lb://ORDERSERVICE
+  spring.cloud.gateway.routes[1].predicates[0].name=Path
+  spring.cloud.gateway.routes[1].predicates[0].args[pattern]=/order/**
+
+  Api Calls 
+    localhost:9090/product/1
+    localhost:9090/order/1
+	
+ incase we one of service is down we need to return with response for api 
+    1- add new dependency 
+	
+	  <dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-circuitbreaker-reactor-resilience4j</artifactId>
+		</dependency>
+ 
+   2- create Controller 
+				 @RestController
+			public class FallbackController {
+
+				@GetMapping("/orderServiceFallBack")
+				public String orderServiceFallback() {
+					return "Order Service is down!";
+				}
+
+				@GetMapping("/paymentServiceFallBack")
+				public String paymentServiceFallback() {
+					return "Payment Service is down!";
+				}
+
+				@GetMapping("/productServiceFallBack")
+				public String productServiceFallback() {
+					return "Product Service is down!";
+				}
+			}
+			
+	 3- adding this fallback api to each route configuration  in application.properities
+	  
+	  spring.cloud.gateway.routes[0].filters[0].name=CircuitBreaker
+	  spring.cloud.gateway.routes[0].filters[0].args.name=PRODUCT-SERVICE
+	  spring.cloud.gateway.routes[0].filters[0].args.fallbackuri=forward:/productServiceFallBack
+	  
+	  
+- testing stop the product microserviecs 
+   localhost:9090/product/1   >>> response  [ Product Service is down!]
+
+
+2- configuration class 
+
+
+    @Bean
+    public RouteLocator gatewayRouter(RouteLocatorBuilder builder) {
+
+
+        return builder.routes().
+		route(p -> p.path("/get").filters(f -> f
+                                .addRequestHeader("MyHeader", "Header Value")
+                                .addRequestParameter(" param1", "param1 Value"))
+                        .uri("http://httpbin.org:80"))     /// if we need to direct to URL
+                //// lb://CURRENCY-EXCHANGE-SERVICE
+
+                .route(p -> p.path("/currency-exchange/**").uri("lb://CURRENCY-EXCHANGE-SERVICE"))    // kindly note  (currency-exchange) it'a the api name in  (currency-exchange-service) project
+                .route(p -> p.path("/currency-conversion-fegin/**").uri("lb://currency-conversion-service")) // kindly note  (currency-conversion-fegin) it'a the api name in  (ccurrency-conversion-service) project
+                .route(p -> p.path("/currency-conversion/**").uri("lb://currency-conversion-service"))        // kindly note  (currency-conversion-fegin) it'a the api name in  (ccurrency-conversion-service) project
+                .route(p -> p.path("/currency-conversion-new/**").filters(f -> f.rewritePath("/currency-conversion-new/(?<segment>.*)", "/currency-conversion-fegin/${segment}"))
+                        .uri("lb://currency-conversion-service"))
+                ///   .route(p -> p.path("/currency-conversion/**").uri("lb://currency-conversion-service"))
+//                .route(p -> p.path("/currency-conversion-feign/**")
+                ///                     .uri("lb://CURRENCY-CONVERSION-SERVICE"))
+                .build();
+    }
+
+
+  api calls 
+      http://localhost:8765/currency-exchange/from/USD/to/INR
+      http://localhost:8765/currency-conversion-fegin/from/USD/to/INR/quantity/10 
+	  
+
+ 2- Very important note 
+       common Error  >>  java.net.UnknownHostException: failed to resolve 'MY-COMPUTER-NAME'  
+       solution   >>>   Add this config to for each micro microservice     eureka.instance.hostname=localhost
+
+

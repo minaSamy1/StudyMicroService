@@ -1,0 +1,28 @@
+the main idea is to create file like module bundle which contain the message you want to display
+we can have file per language Must Named " messages.properties "  and we define the message per code 
+and in each request we must add head accept-language = En  or fr
+
+GET to http://localhost:8080/hello-world-internationalized with a Header Accept-Language: nl
+
+
+
+1- for english bundle
+messages.properties
+
+  good.morning.message=Good Morning
+
+
+2- for Franch bundle
+   messages_fr.properties 
+     good.morning.message=Bonjour
+
+
+3- and in the controller we get the locallanguage and per it we back with the message from the correct file
+        @GetMapping("/testInteralization")
+        public String test()
+        {
+            Locale locale = LocaleContextHolder.getLocale();
+            return messageSource.getMessage("good.morning.message", null, "Default Message", locale );
+
+
+        }

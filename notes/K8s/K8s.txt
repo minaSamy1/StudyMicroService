@@ -1,0 +1,139 @@
+  -- here you will know  
+        whats the deployment > ReplicaSet > Pod  and the role of each one
+        how to delete any object 
+        how to enter inside any componet and show the log 
+ 
+ 
+   -------------- Create First K8s Deployment ------------------------
+kubectl create deployment hello-world-rest-api --image=in28min/hello-world-rest-api:0.0.1.RELEASE
+kubectl expose deployment hello-world-rest-api --type=LoadBalancer --port=8080
+kubectl scale deployment hello-world-rest-api --replicas=3
+
+kubectl get service    >> get ip cluster-ip or extenal ip
+
+			 curl 10.98.158.117:8080/hello-world
+			 curl 10.98.158.117:8080/hello-world-bean
+
+ ------------- K8s Feature like deleting or change the image of running deployment --------
+
+kubectl delete pod hello-world-rest-api-58ff5dd898-62l9d
+kubectl autoscale deployment hello-world-rest-api --max=10 --cpu-percent=70
+kubectl edit deployment hello-world-rest-api #minReadySeconds: 15
+kubectl set image deployment hello-world-rest-api hello-world-rest-api=in28min/hello-world-rest-api:0.0.2.RELEASE
+ 
+gcloud container clusters get-credentials in28minutes-cluster --zone us-central1-a --project solid-course-258105
+kubectl create deployment hello-world-rest-api --image=in28min/hello-world-rest-api:0.0.1.RELEASE
+kubectl expose deployment hello-world-rest-api --type=LoadBalancer --port=8080
+kubectl set image deployment hello-world-rest-api hello-world-rest-api=DUMMY_IMAGE:TEST
+kubectl get events --sort-by=.metadata.creationTimestamp
+kubectl set image deployment hello-world-rest-api hello-world-rest-api=in28min/hello-world-rest-api:0.0.2.RELEASE
+kubectl get events --sort-by=.metadata.creationTimestamp
+kubectl get componentstatuses
+kubectl get pods --all-namespaces
+ 
+ 
+                --------------------------  Get K8s component like pod , svc ,.... ------------------------
+					kubectl get events
+					kubectl get pods
+					kubectl get replicaset
+					kubectl get deployment
+					kubectl get service
+					 
+					kubectl get pods -o wide
+					 
+					kubectl explain pods
+					kubectl get pods -o wide
+					 
+					kubectl describe pod hello-world-rest-api-58ff5dd898-9trh2
+					 
+					kubectl get replicasets
+					kubectl get replicaset
+					 
+					kubectl scale deployment hello-world-rest-api --replicas=3
+					kubectl get pods
+					kubectl get replicaset
+					kubectl get events
+					kubectl get events --sort.by=.metadata.creationTimestamp
+					 
+					kubectl get rs
+					kubectl get rs -o wide
+					kubectl set image deployment hello-world-rest-api hello-world-rest-api=DUMMY_IMAGE:TEST
+					kubectl get rs -o wide
+					kubectl get pods
+					kubectl describe pod hello-world-rest-api-85995ddd5c-msjsm
+					kubectl get events --sort-by=.metadata.creationTimestamp
+					 
+					kubectl set image deployment hello-world-rest-api hello-world-rest-api=in28min/hello-world-rest-api:0.0.2.RELEASE
+					kubectl get events --sort-by=.metadata.creationTimestamp
+					kubectl get pods -o wide
+					kubectl delete pod hello-world-rest-api-67c79fd44f-n6c7l
+					kubectl get pods -o wide
+					kubectl delete pod hello-world-rest-api-67c79fd44f-8bhdt
+
+
+
+  ------------ Creating Deployment from Our Exchange-Service image whcih we push it to docker after Main changes to be able for K8S -------------------------
+  
+     - main change   [ pom.xml   , application.properities ]     -- remove the Eurka and Zipkin
+ 
+kubectl create deployment currency-exchange --image=in28min/mmv2-currency-exchange-service:0.0.11-SNAPSHOT
+kubectl expose deployment currency-exchange --type=LoadBalancer --port=8000
+kubectl get svc
+kubectl get services
+kubectl get pods
+kubectl get po
+kubectl get replicaset
+kubectl get rs
+kubectl get all
+   to Test 
+      curl 10.101.108.184:8000/currency-exchange/from/USD/to/INR
+      
+	  
+	    ------------ Creating Deployment from Our Conversion-Service image whcih we push it to docker after Main changes to be able for K8S -------------------------
+  
+     - main change   [ pom.xml   , application.properities  , proxyClasss]     -- remove the Eurka and Zipkin
+	kubectl create deployment currency-conversion --image=in28min/mmv2-currency-conversion-service:0.0.11-SNAPSHOT
+	kubectl expose deployment currency-conversion --type=LoadBalancer --port=8100
+
+	curl 10.109.113.118:8100/currency-conversion-feign/from/EUR/to/INR/quantity/10
+	 
+ 
+ 
+kubectl get svc --watch
+ 
+kubectl get deployments
+          ------------- extract the running deployment to be Yaml File --------------
+ 
+kubectl get deployment currency-exchange -o yaml >> deployment.yaml   >> will create yaml file from the deployment
+kubectl get service currency-exchange -o yaml >> service.yaml       >>>>. will create yaml file for the service
+ 
+kubectl diff -f deployment.yaml                   >>> get difference between the running deployment and the deployment between the file  ( such replica )
+kubectl apply -f deployment.yaml                  >>>>> will apply the new deployment with the changes
+ 
+kubectl delete all -l app=currency-exchange
+kubectl delete all -l app=currency-conversion
+ 
+kubectl rollout history deployment currency-conversion
+kubectl rollout history deployment currency-exchange
+kubectl rollout undo deployment currency-exchange --to-revision=1
+ 
+kubectl logs currency-exchange-9fc6f979b-2gmn8
+kubectl logs -f currency-exchange-9fc6f979b-2gmn8 
+ 
+kubectl autoscale deployment currency-exchange --min=1 --max=3 --cpu-percent=5 
+kubectl get hpa
+ 
+kubectl top pod
+kubectl top nodes
+kubectl get hpa
+kubectl delete hpa currency-exchange
+ 
+kubectl create configmap currency-conversion --from-literal=CURRENCY_EXCHANGE_URI=http://currency-exchange
+kubectl get configmap
+ 
+kubectl get configmap currency-conversion -o yaml >> configmap.yaml
+ 
+watch -n 0.1 curl http://34.66.241.150:8100/currency-conversion-feign/from/USD/to/INR/quantity/10
+ 
+docker push in28min/mmv2-currency-conversion-service:0.0.12-SNAPSHOT
+docker push in28min/mmv2-currency-exchange-service:0.0.12-SNAPSHOT

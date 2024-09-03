@@ -1,0 +1,72 @@
+- we know the useful of the Using the naming server espically 
+  when use [ fegin ]  to avoid defining the port for ech service  
+
+
+here we will define how to use it by name-server using Eurka
+
+
+1- create Springboot app which will act as Eurka server  
+
+   - depency 
+               	<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
+		</dependency>
+  
+    - in main class we will enable Eurka 
+               @EnableEurekaServer
+
+
+   - in application.properities
+     server.port=8761 
+
+   ## settings to disabling the registration of the client with Eureka server and fetching the registry from it.
+            eureka.client.register-with-eureka=false
+             eureka.client.fetch-registry=false
+
+ now the Server is ready to be used   localhost:8761   
+   but still empty no services register 
+ 
+
+
+ ----------------------------- Register any Cient service in Eurka -------------------------
+
+
+1- in pom.xml  
+           <dependency>
+               <groupId>org.springframework.cloud</groupId>
+               <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+
+
+2- in application.properities
+      eureka.client.serviceUrl.defaultZone=http://localhost:8761/eureka
+      eureka.instance.lease-renewal-interval-in-seconds=0
+
+
+
+  now after you restart you project services  
+    if you open  localhost:8761      you will find your services it's already registered successfully
+
+
+
+
+---------------------------------- Using Name server -------------------------------
+
+
+- after we register all services we have in Eurka
+    now each services  can call other services by using the Nameing services  without defing the URL:port
+     and by using   @FeignClient(name="currency-exchange-service") it will ask the Eurka 
+      and the Eurka we reply with the Best port avaliable by using load balancer
+
+
+we appliced in CurrenyCoversion Service which Call CurrencyExchangeServices 
+
+
+     @FeignClient(name="currency-exchange-service")   /// kindly note we write the service name which is Eurka
+		public interface CurrencyExchangeProxy {
+
+   			 @GetMapping("/currency-exchange/from/{from}/to/{to}")
+   			 public CurrencyConversion retriveRate(@PathVariable String from, @PathVariable String to);
+			
+                    }

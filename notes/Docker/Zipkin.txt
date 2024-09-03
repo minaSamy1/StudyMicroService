@@ -1,0 +1,47 @@
+1- connecting MicroService to Zipkin
+  first of all you must run the zipkin image in docker by  [ docker run -p 9411:9411 openzipkin/zipkin:2.23 ]
+ 1- Pom.xml
+      
+    <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-observation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-zipkin</artifactId>
+        </dependency>
+
+ 2-properities
+       ## related to  distributed Tracing log
+		management.tracing.sampling.probability=1.0
+		logging.pattern.level=%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]
+
+
+
+2-Zikpin URL [  http://localhost:9411/zipkin ]
+
+
+Advance : 
+  1- in you need to log the RestTemplate whil while using api    
+                @Configuration(proxyBeanMethods = false)
+			class RestTemplateConfiguration {
+
+  					  @Bean
+    					RestTemplate restTemplate(RestTemplateBuilder builder) {
+        				return builder.build();
+   					 }
+				}
+
+
+ 2- if you need to log the the nested api which call by Fegin inside api  ( currency-conversion-fegin api  >>> call currency-exchange  )
+
+     <!-- Enables tracing of REST API calls made using Feign-->
+		<dependency>
+			<groupId>io.github.openfeign</groupId>
+			<artifactId>feign-micrometer</artifactId>
+		</dependency>

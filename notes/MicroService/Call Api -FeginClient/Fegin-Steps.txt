@@ -1,0 +1,30 @@
+- as we know the useful of Fegin which use to call RestServices from other service project
+   
+
+   +Steps to call other Services 
+
+       1- in pom.ml 
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-starter-openfeign</artifactId>
+            </dependency>
+
+     2- in Main Class will enable Fegin by using   @EnableFeignClients
+
+     3- Create Interface which consider as proxy where we define 
+        which service we will call from it   
+
+
+        //@FeignClient(name="dasdadasd",url="localhost:8000")    /// while using static  URL 
+        @FeignClient(name="currency-exchange-service")   ///   ( Using Naming Server  Eurka )  kindly note we write the service name which is Eurka
+            public interface CurrencyExchangeProxy {
+
+
+                @GetMapping("/currency-exchange/from/{from}/to/{to}")
+                public CurrencyConversion retriveRate(@PathVariable String from, @PathVariable String to);
+            }
+
+
+       4- in the class while we will consume the the external Service by Fogin 
+
+                   CurrencyConversion currencyExchangeResponse = exchangeServiceProxy.retriveRate(from, to);
