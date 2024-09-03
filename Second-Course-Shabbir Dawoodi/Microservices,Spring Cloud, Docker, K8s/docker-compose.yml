@@ -1,0 +1,29 @@
+version: '3'
+services:
+
+  serviceregistery:
+    image: mina21/serviceregistery:latest
+    container_name: serviceregistery
+    ports:
+      - '8761:8761'
+
+  configserver:
+    image: mina21/configserver:latest
+    container_name: configserver
+    ports:
+      - '9296:9296'
+    environment:
+      - EUREKA_SERVER_ADDRESS=http://serviceregistery:8761/eureka
+    depends_on:
+      - serviceregistery
+
+  cloudgateway:
+    image: mina21/apigateway:latest
+    container_name: cloudgateway
+    ports:
+      - '9090:9090'
+    environment:
+      - EUREKA_SERVER_ADDRESS=http://serviceregistery:8761/eureka
+      - CONFIG_SERVER_URL=configserver
+    depends_on:
+      - configserver

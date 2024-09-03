@@ -1,0 +1,440 @@
+784_:?S_?WFMe3&/ggrl92dtvQ3Wg*n9
+
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'root';
+
+
+docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' 9361af84f5fe
+
+mysql -h 172.17.0.2 -P 3306 --protocol=tcp -u root -p  
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'172.17.0.1' IDENTIFIED BY 'root' WITH GRANT OPTION;
+
+
+- Steps 
+   1- create product service 
+             - add product and get product   Api
+
+   2- create order services  
+               - placeOrder Api 
+
+   3- create Service Registry 
+   
+   4- Regiser all service in Eurka 
+   
+   5- create Config server >>> add the config in both Service( product / Order) 
+   
+   6- create reduceQuantity Api in product services
+   
+   7- Start to call reduceQuantity inside  placeOrder api by Fegin client
+   
+   8- Start using Error Decoder and handle Exception in OrderServices
+   
+   9- setup Zipkin by docker and integrate int with other service   ( Not Work )
+    
+  10- create payment service 
+             - create addPayment APi 
+
+  11-  start to call addPayment Api inside OrderService ( Placedorder ) by feginClient
+  
+  12- create getOrderApi inside OrderService  to return all info about order 
+      - integra`te with product to get product info by RestTemplate
+	  - integrate with payment to get paymentInfo for this order by RestTemplate
+  
+  13- create Api-GateWay  and configure the path in application.Yaml
+  
+  14- implement circuit breaker in Api-GateWay for any service down 
+  
+  15- implement circuit breaker in orderservice and define all configuration
+  
+  16- implement Ratelimt in api-GateWay
+  
+  
+  -----------   security Okta ------------------
+   - Okta Registeration and configuration 
+           - create account   - create application     -create claim inside ( security > APi )
+		   login :  http://localhost:9090/login/oauth2/login/code/okta
+  
+not working open the okta login page while call the api login
+
+
+--------------------------          Unit testing and mockito ---------------------------------------
+
+1- create unit testing for Service layer for OrderService   ( look to the code in OrderServiceImplTest )
+
+   - create the OrderServiceImplTest >>  which will have test case for each method  ( placeOrder / getOrder )
+      
+           - we know to call other outside microservice ( productService / paymentService )  in two cases ( RestTemplate / Fegin Client )
+
+    1- restTemplate 
+           when(restTemplate.getForObject("http://PRODUCT-SERVICE/product/" + order.getOrderId(), ProductDetails.class)).thenReturn(getMockProduct());
+
+    2-   Fegin client
+    when(prodService.reduceQuantity(anyLong(), anyLong())).thenReturn(new ResponseEntity<Void>(HttpStatus.OK));
+               
+
+
+---------------------------------------------------------Docker -------------------------
+1- introduction
+2- setup
+3- difference between docker & virulization
+4- main docker command
+    docker images
+    docker pull
+    docker rm 
+    docker rmi
+    docker ps 
+    docker ps -a
+    docker run --name -p  -d
+    docker log 
+   docker inspect
+   docker exec   >>>>>> to execute any cmd inside the image
+   docker prune -a  >>> will stop and remove every thing ( images containers  network ... )
+
+
+
+
+- lazm ykon 3aml build LL projet w mtl3 mno jar file 
+
+   - now lets know how to build image from our project 
+        1- by using docker file    + cmd 
+        2- by using jib plugin in POM.XML  + cmd
+--------------------------------------------------------------    Building by using docker File -------------------------------------------
+
+   - let's now the first one docker file 
+
+docker file for serviceRegistert  ( using docker file to build the image)
+ 
+   FROM openjdk:17
+
+ARG JAR_FILE=target/*.jar
+
+COPY ${JAR_FILE} serviceregistery.jar
+
+ENTRYPOINT ["java", "-jar", "/serviceregistery.jar"]
+
+EXPOSE 8082
+ -------------------------------------------------------   Building images ------------------------------
+     here we will build the image locally from our jar file   this will build through the DockerFile  to build our image
+
+  >>>>        docker build -t mina21/orderservice:latest .   >>>>>>>>>>>>>>
+
+
+  ----------------------------------- Running service form the images ------------------------------------
+   here we know the useful of using environment variable in docker map to application properities
+for running the images 
+
+  1  --- for running Image ServiceRegistery ( Eurka )
+  docker run  -d --name serviceregistery -p8761:8761 e1ced32
+  
+  2--- for running image ConfigServer
+docker run -d -p9296:9296 -e EUREKA_SERVER_ADDRESS=http://host.docker.internal:8761/eureka --name configserver:v2
+			
+	
+	
+  3--- for running image ApiGateway			
+docker run -d -9090:9090 e- CONFIG_SERVER_RUL=host.docker.internal  -e EUREKA_SERVER_ADDRESS=http://host.docker.internal:8761/eureka --name apigatway fd2f2601dfd5
+			
+	   -- for Running image OrderService		
+docker run -d -p 8081:8081 -e CONFIG_SERVER_URL=http://host.docker.internal -e EUREKA_SERVER_ADDRESS=http://host.docker.internal:8761/eureka --name orderservice e1ced3216248
+
+
+        ----------------------------------- pushing the images  ------------------------------
+   - after login to your docker
+
+  1- docker push mina21/serviceregistery:latest
+   
+  2-  docker push mina21/apigateway:v1
+
+  upload all as you want  			
+
+   -------------------------------------------- Docker Compose --------------------------------------- 
+     - note lazm akon mo2ef kol el service elly kont msh8lha abl kda l2n y3ober ha8l kolo tany bs el compose file
+   - here we will write compose file to start up the 3 service ( Eurka , config , apigateway ) only 
+     and aslo we learn about [ the environment variable and Depends on ]  in compose  ( very very important  .... )
+
+   
+version: '3'
+services:
+
+  serviceregistery:
+    image: mina21/serviceregistery:latest
+    container_name: serviceregistery
+    ports:
+      - '8761:8761'
+
+  configserver:
+    image: mina21/configserver:latest
+    container_name: configserver
+    ports:
+      - '9296:9296'
+    environment:
+      - EUREKA_SERVER_ADDRESS=http://serviceregistery:8761/eureka
+    depends_on:
+      - serviceregistery
+
+  cloudgateway:
+    image: mina21/apigateway:latest
+    container_name: cloudgateway
+    ports:
+      - '9090:9090'
+    environment:
+      - EUREKA_SERVER_ADDRESS=http://serviceregistery:8761/eureka
+      - CONFIG_SERVER_URL=configserver
+    depends_on:
+      - configserver
+   
+   
+   Running the compose file ( going to the path of compose file  )  >>>    docker-compose -f docker-compose.yml up
+
+  ------------------------   Docker Maven JIB Plugin  ------------------------------
+    this way enable us to build the image and push it directly to the docker hub 
+    with adding plugin to pom.xml 
+
+
+    <plugin>
+				<groupId>com.google.cloud.tools</groupId>
+				<artifactId>jib-maven-plugin</artifactId>
+				<configuration>
+					<from>
+						<image>openjdk:11</image>
+					</from>
+					<to>
+						<image>registry.hub.docker.com/mina21/serviceregistry</image>
+						<tags>${project.version}</tags>
+					</to>
+				</configuration>
+			</plugin>
+
+
+run in inteljj this command ( mvn clean install jib:build )
+
+
+
+--------------------------------------------------------------------------------Kubernates --------------------------------------------------------------------- 
+
+1- describe the core component ( etcd , api , ....... ) 
+2- describe how to install local (  and aslo from Docker desktop  ) 
+
+3- starting with main CMD for  k8s  
+    - kubectl get ( pods , service , replicaset ,... )
+	- ruuing yaml file 
+	     kubectl apply -f deployment.ymal 
+
+
+4- talk about the name space describe each one  ( default ,  kube-system ( which contain etcd , api ,... )   )
+   - we know the useful for using namespace to collect every thing related to the project ( pod , deployment , service )
+           -   kubectl create namespace my-project
+   - we know how to assgin any thing to this name space  by using  (  -n )
+			kubectl create deployment test --image ngix  -n my-project
+			
+5- talk about the service 
+
+
+6- talk about Ingress service   to calling by DNS not ip  this for enable access 
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: example-ingress
+  namespace: your-namespace
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: example.com
+      http:
+        paths:
+          - path: /path1
+            pathType: Prefix
+            backend:
+              service:
+                name: service1
+                port:
+                  number: 80
+				  
+				  
+	>>   kubectl apply -f ingress.yaml 
+	>>>  http://example.com/path1
+	
+	
+	
+	--- Actual work from
+		 vedio 133
+			- changing some configuration in all application.properities (  configserver:${CONFIG_SERVER_URL:http://localhost:9296}  and aslo Eurka config)
+			- buidling and pushing image for each Project ( serivce )
+			
+			 ------------------------------------------  service registery  configuration ---------------------
+	- for service registery 
+	    - create statful set 
+		-create service for internal 
+		-create aslo service with type loadbalance to external 
+		
+		---------------------------------------------  config-server ----------------------------------
+		
+   - for config-server 
+     - create deployment 
+	 - create service
+	 + we need to configure that this deployment will register in ( service Registery )
+	    -  ${EUREKA_SERVER_ADDRESS:http://localhost:8761/eureka}    this we need to congigure it 
+	  step 1 >>> create config map
+	
+				apiVersion: v1
+				kind: ConfigMap
+				metadata:
+				  name: eureka-cm
+				data:
+				  eureka_service_address: "http://eureka-0.eureka:8761/eureka"           ....> the URL for the service name 
+				  
+     step 2 >> in deployment file for config will define enviroment read from this config map
+	 
+	      env:
+          - name: EUREKA_SERVER_ADDRESS                       ......... the property name in application.properities
+            valueFrom:
+              configMapKeyRef:
+                name: eureka-cm                                   ............... the config map
+                key: eureka_service_address                                  the propery in config map
+				
+		---------------------------------------------  Api-gateway --------------------------------------------------
+		- for api-gateway   
+		   - create deployemnet 
+		   -create service 
+		   -we need to configure -config server   
+		      + create confgiMap   for config server
+			  +add the environment variable inside the deployment     ( eurak address  , config-server)
+			  
+			  
+			------------------------- Other service  ---------------------------------------------------
+			
+		- for Order service  , product service , payment service  
+		    - create deployemnet for eaach service 
+			- create service for each deployment 
+			- config the environment variable in each deplyment ( Eurka , config )
+			
+			
+			
+	----------------------------------------------------- MySql -----------------------------
+	- create config file for my sql   Will be stateful 
+	     - create PV ( persistance volume )
+		 - create Persitance volume claim ( PVC )
+		 -create statfulset from mysql 
+		        - adding the volum
+				- adding aslo the defineing sql statmemt to run whil the container start to create the empy db for each Micro ( orderdb , productdb, paymentdb)
+							  volumeMounts:
+							- name: mysql-initdb
+							  mountPath: /docker-entrypoint-initdb.d
+							- name: mysql-persistent-storage
+							  mountPath: /var/lib/mysql
+						  volumes:
+							- name: mysql-initdb
+							  configMap:
+								name: mysql-initdb-cm
+							- name: mysql-persistent-storage
+							  persistentVolumeClaim:
+								claimName: mysql-pvc
+		- creating config map for running script  ( mysql-initdb-cm )
+		
+							  apiVersion: v1
+								kind: ConfigMap
+								metadata:
+								  name: mysql-initdb-cm
+								data:
+								  init.sql: |
+									CREATE DATABASE IF NOT EXISTS orderdb;
+									CREATE DATABASE IF NOT EXISTS paymentdb;
+									CREATE DATABASE IF NOT EXISTS productdb;
+		create Service for my sql 
+		
+		
+		
+                 ----------------------------- connecting other service to DB -------------------------
+				  - creating configmap for the Db 
+								 
+								apiVersion: v1
+								kind: ConfigMap
+								metadata:
+								  name: mysql-cm
+								data:
+								  hostname: "mysql-0.mysql"
+				  
+				  - adding this config to each deploymet 
+				      name: DB_HOST
+					   valueFrom:
+						configMapKeyRef:
+							 name: mysql-cm
+							 key: hostname
+							 
+							 
+							 
+			--------------------------- configure Zipkin -------------------------------
+			- create deployment for zipkin
+			- define service for internal access 
+			-define service type of loadbalancer for external acces to dashboard
+			
+			-----------------------------------------------   Run the all Script ---------------
+			
+   - here we run the all script define in the folder K8s 
+   - after all script we can open any serive like Eurka 
+      - kubectl apply -f /k8s/
+	  
+	  minicube service eurka-lb 
+	  
+	  - there is some thing we only change we change the ip of the redirect in okta website to redirect to the ip of the cloudgateway
+	  -----------------------------------------------------------  Remove Eurka server --------------------------------------
+	  
+	  
+	  the below steps for replace the Eurka service with the K8s 
+	     - so we made many changes in all projects 
+		      - remove the depenency of Eurka from each project  
+			  - remove the regisertation on each service from the application.properties from each project 
+			  - change configuration in OrderServices  
+			       - change the name of service in feginClient  and aslo change the registeration
+			       - changes also the name of services from the test classes
+				   
+			  - in config-map aslo remove the Eurka configuration
+			  
+			  - in each config file for deployment we aslo remove the environment variable of Eurka which read from config-map
+			  
+			  
+			  - deply all files again 
+			  
+			  
+			  
+          ************************************************** CI/CD ***********************************************
+		  
+		 steps  :    
+		 
+		    1- convert each service to be in sperated Repository
+			2- create googel account 
+			3-create vm instance for jenkis
+			4-using googel k8s ( GKE)
+			5-pushing the image to our private docker hub ( using googel aslo )
+			6- sonar test 
+			7- piplines
+			
+  Actual work 
+      1- create private repo for each project and aslo put the deployment file for this prject inside new folder k8s
+	  2- create in GCP  artifact repo  ( docker repo )  
+	  3- creating VM 
+	  4- install in vm ( java , jenkis , Git , kubectl )
+	  5- enable netwrok to access  the vm external by ( NAT cloud  , Firwall PVC ) 
+	  6- continue install and configure jenkis ( configure Git , Maven )
+	      - create creditential access from github to jenkines
+		  - create access also to googel kubernetes  by creating IAM account in GCP and generating the KEY
+		     and this KEY in googel will add to jenkins ( manage plugin)
+			 
+	 7- create jenkis file for project config file  
+	      -create the pipeline for this porject +create webhook
+		  
+ >>>>   [ the main target of our jenkins file  ( 1- checkout the project  ,  2- building and pushing the image to GCP , 3- deploying ) ]
+ 
+				************************************* Starting with sonar *******************************8
+				   sonar responsible for testing the project and check quality of code 
+				   
+				  1- start to setup sonar with attached filed with cmd 
+				  2- integration between jenkins and sonar 
+				  
+		make integration between sonar and order service 
+		make configuration between the jenkines and sonar 
+		 change the jenkin file of order service and add to sonar 
+		 run the pipline of 
+		 order service and will pass on all step ( checkout , build ,  sonar Qube analysis , quality gate ,push image , deploy ) 
+             
