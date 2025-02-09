@@ -16,7 +16,9 @@
 			spring.cloud.config.server.git.clone-on-start=true
 			spring.cloud.config.server.git.default-label=main   /// get from branch main
 			
-			
+	Testing : ( for testing our config server read each file it Git )
+           localhost:8888/limits-service/dev
+           localhost:8888/limits-service/default
 	------------------------------ in Client Project  -----------------
 	
 	1- add dependency 
@@ -36,5 +38,6 @@
 	   spring.profile.active=dev
 	   spring.cloud.config.profile=dev
 
-
+Testing : 
+     localhost:8081/limits
 		
