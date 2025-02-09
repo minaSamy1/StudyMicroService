@@ -28,7 +28,7 @@
 		
 		
 	2- in application.properities
-	
+	# if you don't add the below config in case you already and the config client depenecy project will not run [No spring.config.import property has bedefined]
 	  spring.config.import= optional:configserver:http://localhost:9296    // get the configuration from the our congfig server
-       spring.cloud.config.profile=dev   /// need to work in file application-dev.properities
+          spring.cloud.config.profile=dev   /// need to work in file application-dev.properities
 		
