@@ -40,4 +40,19 @@
 
 Testing : 
      localhost:8081/limits
-		
+
+Example  
+our local application.properities 
+   limits-service.minimum=30
+   limits-service.maximum=235
+
+// the @value will read the Value from the activc
+    @Value("${limits-service.minimum}")
+    private int min;
+    @Value("${limits-service.maximum}")
+    private int max;
+كل اللى عاوزه اقوله انه فى حاله ان لقى قيمه للحاجات دى فى ال 
+Git Repo 
+بتاعتنا هيستخدم القيمه بتاعتها لكن لو ملاقش هيروح يستخدم القيمه اللى موحوده فى 
+application properites 
+بتاع البروجكت 
