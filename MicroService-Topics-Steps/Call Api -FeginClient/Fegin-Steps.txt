@@ -1,7 +1,7 @@
 - as we know the useful of Fegin which use to call RestServices from other service project
    
 
-   +Steps to call other Services 
+   +Steps to call other microservice inside service 
 
        1- in pom.ml 
             <dependency>
