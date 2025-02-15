@@ -24,7 +24,7 @@ here we will define how to use it by name-server using Eurka
             eureka.client.register-with-eureka=false
              eureka.client.fetch-registry=false
 
- now the Server is ready to be used   localhost:8761   
+ now the Server is ready to be used   http://localhost:8761
    but still empty no services register 
  
 
