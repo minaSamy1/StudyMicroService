@@ -1,0 +1,39 @@
+ Steps to create image from your springBoot
+   1- using Dockerfile 
+   2- using Maven 
+        prerequist : 1- make sure the docker is run 
+		             2- make the maven to work Online its setting in intellj
+					 3- make sure in pom.xml the packaging in ( jar )
+					 4- try to run mnv-install to extract the jar
+					 5- maybe some problem need to restart the IDE or remove caching of IDE or remove .m2/ folder
+	                 6- you may need to define configuration  in pom.xml to define  image name
+					 
+					 <plugin>
+						<groupId>org.springframework.boot</groupId>
+						<artifactId>spring-boot-maven-plugin</artifactId>
+						<configuration>
+							<image>
+								<name>mina21/mmv3-${project.artifactId}:${project.version}</name>
+							</image>
+							<pullPolicy>IF_NOT_PRESENT</pullPolicy>
+						</configuration>				
+					</plugin>
+					 
+	 1- Run cmd >> mvn spring-boot:build-image
+	 2- after it created it will be find in local docker repo
+		  docker images 
+	 3- to push to our dockerhub repo
+	   1- must tag the image 
+			  docker tag hello-docker:0.0.1-SNAPSHOT  mina21/hello-docker:v1
+	   2- docker login 
+	   3-pushing to our repo  with the taged name
+			   docker push mina21/hello-docker:v1
+	4- to test the image incase local or after you pull
+		if you use the local image 
+				docker run -d -p 5004:5000 hello-docker:0.0.1-SNAPSHOT
+		   testing 
+			 http://localhost:5004/
+		   result :
+			 { message: Hello World Java v1 }
+	- if you run the image after you pull
+		docker run -d -p 5009:5000 mina21/hello-docker:v1
