@@ -1,0 +1,164 @@
+   -------------  Playing with Resilience4j - Retry and Fallback Methods  ----------
+usage :
+    It aims to handle transient failures (e.g., temporary network issues or server-side problems) 
+    by retrying the request multiple times before failing.   
+  
+  
+    @GetMapping("/sample-api")
+    @Retry(name="sample-api")
+    public String sampleApi() {
+        logger.info("Sample api call received");
+        ResponseEntity<String> forEntity = new RestTemplate().getForEntity("http://localhost:8080/some-dummy-url",
+               String.class);
+        return forEntity.getBody();
+      //  return "sample-api";
+    }
+	
+	application.properities 
+	
+resilience4j.retry.instances.sample-api.maxAttempts=3   ## mean it will try 3 time before the failling
+resilience4j.retry.instances.sample-api.waitDuration=2s  ## between each try wait 2 second
+
+Testing :
+		http://localhost:8000/sample-api	
+  
+2025-02-15T18:37:17.890-05:00  INFO 29496 c.m.c.controller.SampleController     : Sample api call received
+2025-02-15T18:37:19.407-05:00  INFO 29496 c.m.c.controller.SampleController     : Sample api call received
+2025-02-15T18:37:21.922-05:00  INFO 29496  c.m.c.controller.SampleController    : Sample api call received
+
+	java.net.ConnectException: Connection refused: connect
+		 {
+			"timestamp": "2025-02-15T23:51:20.994+00:00",
+			"status": 500,
+			"error": "Internal Server Error",
+			"path": "/sample-api"
+		 }
+ 
+ 
+ now after the failure it return Error we need to return with Response incase any exception accure 
+ 
+        -------------------------------- fallback ---------------------------------
+ will add simple code  fallbackMethod ="hardcodedresponse"   >> this method which execute when the failure accure
+ 
+     
+	@GetMapping("/sample-api")
+    @Retry(name="sample-api", fallbackMethod ="hardcodedresponse" )
+    public String sampleApi() {
+			logger.info("Sample api call received");
+			ResponseEntity<String> forEntity = new RestTemplate().getForEntity("http://localhost:8080/some-dummy-url",
+				   String.class);
+			return forEntity.getBody();
+			//  return "sample-api";
+        }
+	  
+	  
+   public String hardcodedresponse(Exception e)
+     {
+         return "Fallback-Response";
+     }
+	 
+	 
+ - Testing :
+		http://localhost:8000/sample-api	
+	result  
+		Fallback-Response
+		
+		
+---------------------------------------------- circuit breaker -------------------
+
+usage : 
+    a circuit breaker is used to prevent a system from repeatedly trying to call a failing service.
+	
+Key Benefits:
+	Resilience: Protects your application from failures in other services.
+	Fault Tolerance: Allows the system to fail gracefully instead of failing completely.
+	Fallback Mechanisms: You can define fallback logic if the service is down.
+	Prevent Service Overload: Prevents overloading a failing service with additional requests.
+	
+Example Scenario:
+  Imagine you have a microservice that calls an external payment service.
+  If the payment service is down, you don't want to keep trying and cause further delays or failures.
+  The circuit breaker will "open" after several failures and return a fallback response,
+  preventing your app from waiting endlessly for a failing service.
+  
+ Common Libraries for Circuit Breakers:  ( Resilience4j , Hystrix )
+    @CircuitBreaker(name = "default", fallbackMethod = "hardcodedResponse")
+		public String sampleApi() {
+			logger.info("Sample api call received");
+			ResponseEntity<String> forEntity = new RestTemplate().getForEntity("http://localhost:8080/some-dummy-url",
+					String.class);
+			return forEntity.getBody();
+		}
+  public String hardcodedresponse(Exception e)
+    {
+        return "Fallback-Response";
+    }
+
+summary:
+  Retry helps handle temporary failures by trying again, 
+  whereas Circuit Breaker stops making requests when a failure threshold is crossed
+  , preventing overloading of a failing service.
+  
+	--------------------------------------RateLimiting ---------------------------------
+	
+The goal of a RateLimiter is to prevent overloading a service by controlling the flow of requests, 
+ ensuring that they don't exceed a certain threshold over a specific time period.
+ 
+ it allow to executed number of Api calls in speafic Time .
+ this allow to save the api aslo from hacking to hittting the api more than 1000 lead to faill the server 
+
+ Service Overload Prevention:
+    You want to ensure that you don't overwhelm your backend services by sending too many requests in a short period of time.
+	
+application.properities 
+   
+## RateLimiter Configuration
+	resilience4j.ratelimiter.instances.default.limitForPeriod=2
+	resilience4j.ratelimiter.instances.default.limitRefreshPeriod=10s	
+
+
+     @GetMapping("/sample-api-rate")
+     @RateLimiter(name="default")
+     public String sampleApiRate() {
+        logger.info("Sample api call received");
+        return "sample-api";
+    }
+	
+	
+Testing : 
+    http://localhost:8000/sample-api-rate
+	
+	for first and second call will return >>  sample-api
+	 the Thired Call return :    "error": "Internal Server Error",
+	io.github.resilience4j.ratelimiter.RequestNotPermitted: RateLimiter 'default' does not permit further calls
+	
+	
+	--------------------------------------Bulkhead ---------------------------------
+usage :
+ This limits the number of concurrent requests to x number. If there are more than 5 requests trying to access this endpoint at the same time, the 6th request will be either queued or rejected (depending on your configuration).
+You can also configure additional parameters, like queueCapacity, and maxWaitDuration to control the behavior of excess requests.
+
+application.properities 
+   
+## Bulkhead Configuration
+resilience4j.bulkhead.instances.default.maxConcurrentCalls=4
+resilience4j.bulkhead.instances.default.queueCapacity=0
+
+   @GetMapping("/sample-api-rate")
+    @Bulkhead(name="default")
+    public String sampleApiRate() {
+        logger.info("Sample api call received");
+        System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+        return "sample-api";
+    }
+	
+	Testing : 
+    http://localhost:8000/sample-api-rate
+
+		The first 5 requests will be processed.
+		The 6th (and subsequent) requests will either be:
+		Rejected: If you have configured rejection or timeouts.
+		Queued: If your configuration allows queuing excess requests.
+		
+		+
+		

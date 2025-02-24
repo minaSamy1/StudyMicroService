@@ -1,0 +1,68 @@
+  ----------------------  Demo ---------------------------
+   we have image in our docker hub we need to deploy it using GKE
+  ---------------------------------------------------------
+
+1- create account 
+2- Enable Kubernetes api 
+3-create Cluster 
+4- connect to console 
+	gcloud container clusters get-credentials my-cluster --region us-central1 --project glowing-anagram-451505-v3
+5- create new Deployment 
+     kubectl create deployment hello-world-rest-api --image=in28min/hello-world-rest-api:0.0.1.RELEASE
+	 
+6- expose our deployment to be external and Testing it.
+     kubectl expose deployment hello-world-rest-api --type=LoadBalancer --port=8080 
+	 
+	 kubectl get services >> will get all services with all culster and external Ip
+  - Testing 
+       cloud shell >>  curl 35.188.74.104:8080/hello-world
+	   Postman or browser >> http//35.188.74.104:8080/hello-world
+	      Result >> Hello World  V1 zdzhx
+		
+8-Scaling to be have more instance from our deplyment
+    kubectl scale deployment hello-world-rest-api --replicas=2
+	
+	kubectl get pod
+	NAME                                    READY   STATUS    RESTARTS   AGE
+	hello-world-rest-api-8664c5df84-79sbh   0/1     Pending   0          49s
+	hello-world-rest-api-8664c5df84-zdzhx   1/1     Running   0          36m
+	
+  testing :
+      Hello World  V1 zdzhx
+	  Hello World V1 79sbh
+	  
+	  ---------------------- Feature   ---------------
+	 lets talk berif about auto-scaling , configmap  and will discuss later 
+9- AutoScaling  number of Pods based usage
+    kubectl autoscale deployment hello-world-rest-api --max=10 --cpu-percent=70
+
+, Kubernetes will monitor the CPU usage of your pods in the hello-world-rest-api deployment,
+ and it will automatically increase or decrease the number of pods to maintain a target CPU usage of 70%.
+ 
+ 
+9: Add some application configuration for your microservice
+	Config Map - kubectl create configmap todo-web-application-config --fromliteral=
+	RDS_DB_NAME=todos
+
+10: Add password configuration for your microservice
+	Kubernetes Secrets - kubectl create secret generic todo-web-application-secrets-1 --
+	from-literal=RDS_PASSWORD=dummytodos
+    
+12: Delete the Microservices
+	Delete service - kubectl delete service
+	Delete deployment - kubectl delete deployment
+	
+13: Delete the Cluster
+    gcloud container clusters delete
+	
+	------------------------------------ Wizard Create Deployment from UI  --------------------------------------
+	 - from GKE try to create Deployment Wizard ( from UI ) and define 
+	       - deployment name
+		   - define which image
+		   -select to expose and define the port and target port
+		   - try to test it and open the depolyment UI and chane  configuration
+	- try in image mina21/mmv3-currency-exchange-service
+	where 34.72.63.58  is our external ip
+	test it  >> http://34.72.63.58:8000/currency-exchange/from/USD/to/INR
+	
+	

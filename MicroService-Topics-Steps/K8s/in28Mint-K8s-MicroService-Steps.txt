@@ -1,0 +1,221 @@
+------------------------- Objective -----------------------
+ 1- deploy the two microservice ( exchange , conversion ) in K8s and expose it
+ 2- knowing how to use Enviroment variable
+ 3-know to using ConfigMap object to store variable and value
+ 4- knowing how to work and to extract .yaml files ( deployment, service , configmap)
+ 5- knowing how to make auto scaling 
+ 6- know how to check the Health of each microservice
+
+
+4- clone the two microservice ( exchange - conversion) 
+			- chaning in pom.xml  , application.properties , proxy , controller
+			  -----------------  currency exchange --------------
+				1- -- remove the Eurka and Zipkin from pom.xml and  application.properties
+				2- change the version in pom.xml to be 0.0.11
+				3-create the image of currency-exchange service 
+				4- push the image to your dockerhub
+					docker push docker.io/mina21/mmv3-currency-exchange-service:0.0.11-SNAPSHOT
+			kindly note now in docker hub you will find image [mmv3-currency-exchange-service]
+					 inside it you will find TWO tage ( 0.0.1-SNAPSHOT , 0.0.11-SNAPSHOT )
+		
+		  create and running deployment in K8s BUT must sure you are login to your GKE
+			by >>  gcloud auth login
+			Then >>  gcloud container clusters get-credentials autopilot-cluster-1 --region us-central1 --project glowing-anagram-451505-v3
+		   5- deploy currency-exchange 
+			   kubectl create deployment currency-exchange
+              			   --image=mina21/mmv3-currency-exchange-service:0.0.11-SNAPSHOT
+			   kubectl expose deployment currency-exchange --type=LoadBalancer --port=800
+			   
+			 now if you enter the googel platfrom you will find the deployment and service in GoogelUI
+				
+				kubectl get pods
+				kubctl get services	
+			Testing:	http://34.132.172.221:8000/currency-exchange/from/USD/to/INR
+		
+	  -----------------  currency conversion --------------
+		    1- -- remove the Eurka and Zipkin from pom.xml and  application.properties
+			2- change the version in pom.xml to be 0.0.11
+			Tips: 
+			   we have Two api in conversion will call ( restTemplate  , Fegin)
+			 regarding to Rest >> it will be the same as docker
+				  ResponseEntity<CurrencyConversion> apiResponseCall =
+				  new RestTemplate().getForEntity("http://currency-exchange:8000/currency-exchange/from/{from}/to/{to}"
+							, CurrencyConversion.class, urlVariable);
+					- as we alreay have same deployment name or service name  [ currency-exchange:8000]
+			
+			-in proxy class will change
+                @FeignClient(name = "currency-exchange", url = "${CURRENCY_EXCHANGE_SERVICE_HOST:http://localhost}:8000")			
+			 [ ${CURRENCY_EXCHANGE_SERVICE_HOST:http://localhost} ]
+         			 IT mean if we have serivce name ( currency-exchange) use it  if not use localhost
+					  kindy note the service name constist of ( deployment_name_service_host) 
+					   so after we deploymet and expose the exchage it became have value for (CURRENCY_EXCHANGE_SERVICE_HOST)
+			
+		    3-create the image of currency-conversion service 
+			4- push the image to your dockerhub
+			 docker push docker.io/mina21/mmv3-currency-conversion-service:0.0.11-SNAPSHOT
+		kindly note now in docker hub you will find image [mmv3-currency-conversion-service]
+		         inside it you will find TWO tage ( 0.0.1-SNAPSHOT , 0.0.11-SNAPSHOT )
+	create and running deployment in K8s BUT must sure you are login to your GKE
+			by >>  gcloud auth login
+			Then >>  gcloud container clusters get-credentials autopilot-cluster-1 --region us-central1 --project glowing-anagram-451505-v3
+		   5- deploy currency-exchange 
+			   kubectl create deployment currency-exchange --image=mina21/mmv3-currency-conversion-service:0.0.11-SNAPSHOT
+			   kubectl expose deployment currency-conversion --type=LoadBalancer --port=8100
+			   
+			   kubectl get pods
+				NAME                                  READY   STATUS    RESTARTS   AGE
+				currency-conversion-ccf4b68b7-2r55v   1/1     Running   0          83s
+				currency-exchange-668657c486-lm8hw    1/1     Running   0          30m
+				
+			   >kubectl get svc
+					NAME                  TYPE           CLUSTER-IP       EXTERNAL-IP      PORT(S)          AGE
+					currency-conversion   LoadBalancer   34.118.236.211   34.56.212.109    8100:30520/TCP   45s
+					currency-exchange     LoadBalancer   34.118.225.95    34.132.172.221   8000:32233/TCP   31m
+					kubernetes            ClusterIP      34.118.224.1     <none>           443/TCP          80m
+								   
+			 now if you enter the googel platfrom you will find the deployment and service in GoogelUI
+			
+			Testing:	 http://34.56.212.109:8100/currency-conversion/from/USD/to/INR/quantity/10
+						 http://34.56.212.109:8100/currency-conversionFegin/from/USD/to/INR/quantity/100
+			           
+ 
+   5- creating image for the two project and push it into docker hub
+   6- deploy each image in k8s and expose it with external ip and testing it 
+       and we aslo test the api of Fegin and know the important of service-name
+	   
+	   
+	   
+   7- creating the deployment file for exchange-service and its service 
+   9-  now how to deploy each microservice as deployment.yaml
+               ---------------------- currency-exchange ---------------------
+          - extract deployment 
+		           kubectl get deployment currency-exchange -o yaml >> deployment.yaml 
+		  - extract service 
+		       kubectl get service currency-exchange -o yaml >> deployment.yaml 
+	       
+		 - after you get the yaml of service add it to yaml of deployments
+		
+		- now we need to remove all object ( depolyment , pod , service ) before we run our ymal
+		     kubectl delete all -l app=currency-exchange
+			 
+			 pod "currency-exchange-668657c486-lm8hw" deleted
+             service "currency-exchange" deleted
+             deployment.apps "currency-exchange" delete
+		
+		- lets deploy  ( make sure your are in same path where yaml exist )
+		      kubectl apply -f deployment.yaml
+			  
+		-testing	  
+		 curl http://34.57.87.186:8000/currency-exchange/from/USD/to/INR
+		 
+		        ----------------------- currency-conversion ---------------------
+	 @FeignClient(name = "currency-exchange", url = "${CURRENCY_EXCHANGE_SERVICE_HOST:http://localhost}:8000")	
+				 Its the same steps of exchange exactly 
+				  - creat doployment.yaml
+				  -remove the current deployment 
+				  - apply the deployment
+				  Testing:	 http://34.56.212.109:8100/currency-conversion/from/USD/to/INR/quantity/10
+						 http://34.56.212.109:8100/currency-conversionFegin/from/USD/to/INR/quantity/100
+				  -----------------------------------------------------------------
+				  
+		  
+		     
+   8- enable api for logging and stack driver
+ 
+   10- know the useful of enviroment variable in deployment.yaml 
+       ------------ currency-conversion ----------------------------------
+	   -one of the usage of enviroment varaible is to define some variable in our project or project.properities
+	      and take its value from Kubernetes it same as Environment in Docker-compose
+		
+	  - so we can apply it on currency proxy 
+	      @FeignClient(name = "currency-exchange", url = "${CURRENCY_EXCHANGE_URI:http://localhost}:8000")
+		
+	    so we need to get value of CURRENCY_EXCHANGE_URI from k8s 
+		
+	  - so we build new image to be v12 and push it to docker hub
+	     docker push docker.io/mina21/mmv3-currency-conversion-service:0.0.12-SNAPSHOT
+		 
+	 - so we need to make new deployment.yaml for currency-conversion  and using enviroment variable and
+	      change the currency image version 
+	   in deployment.yaml
+	 spec:
+      containers:
+      - image: mina21/mmv3-currency-conversion-service:0.0.12-SNAPSHOT
+        imagePullPolicy: IfNotPresent
+        name: mmv3-currency-conversion-service
+        env:
+         - name: CURRENCY_EXCHANGE_URI
+           value: http://currency-exchange
+      restartPolicy: Always
+	
+    Testing: http://34.57.87.186:8100/currency-conversion/from/USD/to/INR/quantity/10
+			 http://34.57.87.186:8100/currency-conversionFegin/from/USD/to/INR/quantity/100    
+	    
+	   
+	   ----------------------------------------------------------
+   11- knowing the useful of config map to store the environment variable
+             -------- currency-conversion----------------------
+		@FeignClient(name = "currency-exchange", url = "${CURRENCY_EXCHANGE_URI:http://localhost}:8000")
+		instead we define the variable in we can define it in sperated object ConfigMap
+        so our yaml will contain 3 section  ( deployment , service , configMap)
+		   1- in deployment section we will map to our configMap object by add (  envFrom ) section
+		   
+		     spec:
+			  containers:
+			  - image: mina21/mmv3-currency-conversion-service:0.0.12-SNAPSHOT
+				imagePullPolicy: IfNotPresent
+				name: mmv3-currency-conversion-service
+				envFrom:
+				  - configMapRef:
+					  name: currency-conversion
+
+
+        2- creating configMap object in side our deployment
+                		http://currency-exchange  where it's the deployment name
+		apiVersion: v1
+		data:
+		  CURRENCY_EXCHANGE_URI: http://currency-exchange  
+		kind: ConfigMap
+		metadata:
+		  name: currency-conversion
+		  namespace: default
+		  
+		  Testing :
+		   http://34.57.87.186:8100/currency-conversionFegin/from/USD/to/INR/quantity/100 
+		
+   12- we know to to get the logging and how to filiter it .
+   
+   13- knowing about liveess and readless 
+      we use spring actutor with mircoservice to know the health about the api 
+	  and adding some section to our deployment object 
+	    
+		   spec:
+      containers:
+      - image: mina21/mmv3-currency-exchange-service:0.0.11-SNAPSHOT
+        imagePullPolicy: IfNotPresent
+        name: mmv3-currency-exchange-service
+        readinessProbe:
+          httpGet:
+            port: 8000
+            path: /actuator/health/readiness
+        livenessProbe:
+          httpGet:
+            port: 8000
+            path: /actuator/health/liveness
+   
+   after adding this section and apply the deployment.yaml again you can test 
+   http://35.224.148.217:8000/actuator/health/liveness    >> {"status":"UP"}
+   http://35.224.148.217:8000/actuator/health/readiness    >> {"status":"UP"}
+   
+   
+   14- knowing about autoscale 
+       kubectl autoscale deployment currency-exchange --min=1 --max=3 --cpu-percent=5 
+	   
+	   kubectl get hpa
+	     NAME                REFERENCE                      TARGETS      MINPODS   MAXPODS   REPLICAS   AGE
+         currency-exchange   Deployment/currency-exchange   cpu: 7%/5%   1         3         2          4m55s
+	   
+	  testing : by calling it many time 
+	   http://35.224.148.217:8000/currency-exchange/from/USD/to/INR
+   
+   http://34.118.235.116:8000/currency-exchange/from/USD/to/INR

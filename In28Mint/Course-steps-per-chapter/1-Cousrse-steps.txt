@@ -1,0 +1,186 @@
+-Course Steps 
+1- create project limit-service as Config client
+     - contain ONE api which read data from application.properities or from the cloud 
+	     limits-service.minimum=30
+		 limits-service.maximum=235
+		 
+	spring.config.import=optional:configserver:http://localhost:8888
+    spring.profile.active=dev
+    spring.cloud.config.profile=dev
+
+
+	
+2- create project spring-cloud-config-server  which act as a Configuration server Read config from our GIT Repo
+     - where we know
+	      - @EnableConfigServer
+		  - spring.cloud.config.server.git.uri= https://github.com/minaSamy1/SpringCloudConfiguration.git
+			spring.cloud.config.server.git.clone-on-start=true
+
+
+
+------------------   create Microservices ----------------------------------------------------
+
+3- create project [ currency-exchange-service] 
+    - pom using configClient  , h2 , JPA
+	- create Entity and connect to H2 db and create script to insert the data
+	- create our Repository and add new function for Filtiter the curreny by ( from,to)
+	 -Create Controller 
+    http://localhost:8000/currency-exchange/from/USD/to/INR
+	 
+	 {
+			"id": 10001,
+			"from": "USD",
+			"to": "INR",
+			"conversionMultiple": 65.00,
+			"environment": "8000"
+    }
+	
+	
+4- 
+- create project [ currency-exchange-service] 
+    - pom using web
+	- create Entity 
+	 -Create Controller 
+	    -inside the api we will call the exchange-service to get the rate 
+		  there is Two way : 
+		      1- Using RestTemplate 
+					  urlVariable.put("from", from);
+					  urlVariable.put("to", to);
+					 ResponseEntity<CurrencyConversion> apiResponseCall = 
+						  new RestTemplate().getForEntity("http://localhost:8000/currency-exchange/from/{from}/to/{to}"
+														   , CurrencyConversion.class, urlVariable);
+					CurrencyConversion currencyConversion = apiResponseCall.getBody();
+				
+			
+						  http://localhost:8100/currency-conversion/from/USD/to/INR/quantity/10
+							 
+							 {
+								"id": 10001,
+								"from": "USD",
+								"to": "INR",
+								"quantity": 10,
+								"conversionMultiple": 1,
+								"totalCalculatedAmount": 1,
+								"environment": ""
+							 }
+							
+            2- Using  FeginClient
+			      1- adding dependency 
+						 <dependency>
+							   <groupId>org.springframework.cloud</groupId>
+								<artifactId>spring-cloud-starter-openfeign</artifactId>
+						  </dependency>
+						  
+				2- create Proxy :
+				     its java class contain the Header of Each Api you will use later 
+					http://localhost:8000/currency-exchange/from/USD/to/INR 
+					    name [ project name ]  , URL [  the host ]
+					  
+					  @FeignClient(name = "currency-exchange", url = "localhost:8000")  // here defining with serviceName and
+						public interface CurrencyExchageProxy {
+							// get the Signature of Api from the service controller and JUST replace the Object that will return to be [ CurrencyConversion] as it have the same field for Repsonse
+							@GetMapping("/currency-exchange/from/{from}/to/{to}")
+							public CurrencyConversion getExchange(@PathVariable String from, @PathVariable String to);
+						}
+						
+				3- calling
+				     @Autowired
+                      private CurrencyExchageProxy proxy;
+				      CurrencyConversion currencyConversion = proxy.getExchange(from, to);
+		
+		-  note : when we will using the Naming-service will replace the URL of feignClient
+		
+		
+		
+		-------------------------------- Eurka naming service --------------------
+		
+		
+		- create project : naming-server
+		    pom :Eureka Server 
+			application.properities :
+				 eureka.client.register-with-eureka=false
+				 eureka.client.fetch-registry=false
+		   mainClas :   @EnableEurekaServer
+		    
+			
+	  ----------------------------- Register service in Eurka --------------------
+	  
+	  in both project ( currency-exchange , currencyConversion )
+		  - pom :  Eureka Discovery Client 
+		  -application.properities 
+			   eureka.client.serviceUrl.defaultZone=http://localhost:8761/eureka
+			   eureka.instance.lease-renewal-interval-in-seconds=0
+			   
+	in currencyConversion in proxy will change the FeginClient to using 
+	the naming-server and use the looad balance if we have more instance from this service
+	   @FeignClient(name = "currency-exchange")  // where currency-exchange is the service name in Eurka
+	   
+you can test now the Eurka and all service will be registerd
+     - http://localhost:8761
+	 
+	 and aslo can testing the feginClient with namingservice 
+	      http://localhost:8100/currency-conversionFegin/from/USD/to/INR/quantity/100
+		  
+
+
+      ----------------------  Api Gateway ---------------------------
+the Usage of Api-Gateway  ( it's our Entry point )
+   1- is to call the All services we have through one url and port localhost:8765
+   2- can here define the all layer of authentication and autherization
+ 
+	  
+	  -create project : api-gateway
+           pom :  EurkaClient  , Reactive Gateway 
+		   application.properities : 
+		        spring.cloud.gateway.discovery.locator.enabled=true
+                spring.cloud.gateway.discovery.locator.lowerCaseServiceId=true
+
+locator.enabled : This enables the Service Discovery Locator feature in Spring Cloud Gateway
+                  will automatically discover and route requests to microservices registered in a service registry 
+				  
+				 http://localhost:8765/CURRENCY-EXCHANGE/currency-exchange/from/USD/to/INR
+				 http://localhost:8765/CURRENCY-CONVERSION/currency-conversion/from/USD/to/INR/quantity/10
+				 
+lowerCaseServiceId=true : ensures that the service IDs used in the routing configuration are converted to lowercase.
+               http://localhost:8765/currency-exchange/currency-exchange/from/USD/to/INR
+
+
+   - can write custome path for each services 
+	     
+    @Bean
+    public RouteLocator getRouter(RouteLocatorBuilder builder) {
+
+
+        return builder.routes().route(p -> p.path("/get").filters(f -> f.addRequestHeader("MyHeader", "Header").addRequestParameter("Parm", "ParamValue")).uri("http://httpbin.org:80")).
+                route(p -> p.path("/currency-exchange/**").uri("lb://CURRENCY-EXCHANGE")).
+                route(p -> p.path("/currency-conversion/**").uri("lb://CURRENCY-CONVERSION")).
+                route(p -> p.path("/currency-conversionFegin/**").uri("lb://CURRENCY-CONVERSION"))
+                .route(p -> p.path("/currency-conversion-new/**")
+                        .filters(f -> f.rewritePath(
+                                "/currency-conversion-new/(?<segment>.*)",
+                                "/currency-conversionFegin/${segment}"))
+                        .uri("lb://currency-conversion")).build();
+
+               }
+			   
+		so now we can test by
+		    http://localhost:8765/currency-exchange/from/USD/to/INR
+			http://localhost:8765/currency-conversion/from/USD/to/INR/quantity/10
+			http://localhost:8765/currency-conversion-feign/from/USD/to/INR/quantity/10
+			http://localhost:8765/currency-conversion-new/from/USD/to/INR/quantity/10
+			
+			
+	-can apply Logging Filiter aslo 
+	    @Component
+			public class LoggingFilter implements GlobalFilter {
+				private Logger logger = LoggerFactory.getLogger(LoggingFilter.class);
+
+				@Override
+				public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+					logger.info("Path of the request received -> {}",
+							exchange.getRequest().getPath());
+					return chain.filter(exchange);
+				}
+			}
+
+

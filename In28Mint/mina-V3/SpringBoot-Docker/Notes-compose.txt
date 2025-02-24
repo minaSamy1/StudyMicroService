@@ -1,0 +1,17 @@
+Notes While using Docker-compose
+   1- in any service use in docker compos  if it use any localhost inside the project 
+    while we use it in compose we must replace all localhost with our service name in docker compose 
+	-incase we found somthing in application.properties >
+	                    1- we can change it direct in application properities
+		     			2- or we can use in Environments in side our service in docker compose
+			    environment:
+					EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: "http://naming-server:8761/eureka" 
+					
+   - incase we found some localhost inside controller or Service where we call anthor api 	
+      // incase it work locally
+			ResponseEntity<CurrencyConversion> apiResponseCall = new RestTemplate().getForEntity("http://localhost:8000/currency-exchange/from/{from}/to/{to}", CurrencyConversion.class, urlVariable);
+     //in case working wtih Docker will use the service name of currency service exchange(
+        ResponseEntity<CurrencyConversion> apiResponseCall = new RestTemplate().getForEntity("http://currency-exchange:8000/currency-exchange/from/{from}/to/{to}", CurrencyConversion.class, urlVariable);
+   
+   
+   

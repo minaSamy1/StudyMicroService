@@ -1,0 +1,129 @@
+	
+	01- running Zipkin from Docker .
+         - docker run -p 9411:9411 openzipkin/zipkin:2.23
+		 Testing
+			http://127.0.0.1:9411/
+			
+				
+	- intergate zipkin with all project  [ Currency exchange , Currency Conversion , Api gatway ]
+	    - adding depenency 
+		   <!-- Spring Boot 3+ Tracing -->
+			<!-- Micrometer > Brave/OpenTelemetry > Zipkin -->
+			<!-- Micrometer - Vendor-neutral application observability facade
+		.       Instrument your JVM-based application code without vendor lock-in.
+		        Observation (Metrics & Logs) + Tracing.-->
+
+					<dependency>
+						<groupId>io.micrometer</groupId>
+						<artifactId>micrometer-observation</artifactId>
+					</dependency>
+					<dependency>
+						<groupId>io.micrometer</groupId>
+						<artifactId>micrometer-tracing-bridge-otel</artifactId>
+					</dependency>
+					<dependency>
+						<groupId>io.opentelemetry</groupId>
+						<artifactId>opentelemetry-exporter-zipkin</artifactId>
+					</dependency>
+					
+		-application properities
+		     management.tracing.sampling.probability=1.0
+			 logging.pattern.level=%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]
+
+		- solution for FeginClient and RestTemplate
+		    	<!-- Enables tracing of REST API calls made using Feign-->
+					<dependency>
+						<groupId>io.github.openfeign</groupId>
+						<artifactId>feign-micrometer</artifactId>
+					</dependency>
+					
+					
+			@Configuration(proxyBeanMethods = false)
+				class RestTemplateConfiguration {
+					
+					@Bean
+					RestTemplate restTemplate(RestTemplateBuilder builder) {
+						return builder.build();
+					}
+				}
+				
+ ------------------------------ Deploying the application Using DockerCompose ------------------------
+	
+	
+	                ---------------- Currency-Exchange -----------
+	1-create images 
+	   - currency exchange >> adding new configuration in pom.xml inside the <plugin> section add Configuration section
+				 <plugin>
+						<groupId>org.springframework.boot</groupId>
+						<artifactId>spring-boot-maven-plugin</artifactId>
+						<configuration>
+							<image>
+								<name>mina21/mmv3-${project.artifactId}:${project.version}</name>
+							</image>
+							<pullPolicy>IF_NOT_PRESENT</pullPolicy>
+						</configuration>				
+					</plugin>
+					
+					
+		 run maven : mvn spring-boot:build-image
+		 
+		 it will generate image : mina21/mmv3-currency-exchange-service      0.0.1-SNAPSHOT  
+		  if you want to test the image 
+		  
+		    docker run -d -p 8009:8000 mina21/mmv3-currency-exchange-service:0.0.1-SNAPSHOT
+	   
+	      kindly note we will use and port like 8009 which map to Port 8000 which already use in app.pro [ server.port=8000]
+	   
+	   
+	   2-create docker 
+		    version: 1.2
+            services :
+              currency-exchange:
+               image: mina21/mmv3-currency-exchange-service0.0.1-SNAPSHOT
+               mem_limit: 700m
+               port:
+				- "8000:8000"
+		  
+		- Testing docker compose  cd [E:\USA Study\MicroServices\SpringBoot-Docker\Compose]	
+              1- run 
+					docker-compose up
+              2- testing api
+                 	http://localhost:8000/currency-exchange/from/USD/to/INR
+					
+		            --------------------------naming server --------------------
+		-create image for naming-server
+		       - add congfiguration in <plugin>
+			   
+		  -adding service in dockerCompose
+	
+
+- after we add naming server and run the compose we found curreny-exchange not appear in 
+    so we use the Enviroments: instead of changing in application.properitie 
+    and aslo using depends-on:    in each service need to use the naming server 	
+		     
+			      --------------------------currency conversion  --------------------
+	 -create images
+	   - currency conversion >> adding new configuration in pom
+	                         >> inside the controller class replace localhost with ( curreny-exchange) because it will 
+							       run by docker-compose not by run the project itself
+	   -create docker comopose 
+	      -service > currency
+		  -netwrok 
+		  
+		  
+		       -------------------------- api-gatway --------------------
+	-create images
+	   - api-gatway >> adding new configuration in pom
+	   -create docker comopose 
+	      -service > currency
+		  -netwrok 
+		   -------------------------- api-gatway --------------------
+		
+		- Zipkin >> adding new configuration in pom
+	   -create docker comopose 
+	      -service > 
+		  -netwrok 
+		  
+		add the envoironments: to each service need to intergate with zipkin
+		
+	

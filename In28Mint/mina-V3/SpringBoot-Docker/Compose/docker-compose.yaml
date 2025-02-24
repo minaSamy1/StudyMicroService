@@ -1,0 +1,74 @@
+version: '3.7'
+
+services:
+  currency-exchange:
+    image: mina21/mmv3-currency-exchange-service:0.0.1-SNAPSHOT
+    ports:
+      - "8000:8000"
+    depends_on:
+      - naming-server
+    networks:
+      - currency-network
+    environment:
+       # without this configuration this the currency service will not connect to Eurka 
+       #so we have Two solution 1- in app.properties to change localhost to our service (naming-server)
+       #or write the configuration of application.properties and change localhost to our service (naming-server)
+      EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: "http://naming-server:8761/eureka"  #after that will wrok and our service appear
+      MANAGEMENT.ZIPKIN.TRACING.ENDPOINT: "http://zipkin-server:9411/api/v2/spans"      
+     # testing after runnig compose >> http://localhost:8000/currency-exchange/from/USD/to/INR
+      
+      
+        # compose Currency conversion service
+  currency-conversion:
+    image: mina21/mmv3-currency-conversion-service:0.0.1-SNAPSHOT
+    ports:
+      - "8100:8100"
+    depends_on:
+      - naming-server
+    networks:
+      - currency-network
+    environment:
+   
+      EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: "http://naming-server:8761/eureka"
+      MANAGEMENT.ZIPKIN.TRACING.ENDPOINT: "http://zipkin-server:9411/api/v2/spans" 
+      
+  api-gateway:
+    image: mina21/mmv3-api-gateway:0.0.1-SNAPSHOT
+    ports:
+      - "8765:8765"
+    depends_on:
+      - naming-server
+    networks:
+      - currency-network
+    environment:
+   
+      EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: "http://naming-server:8761/eureka"
+      MANAGEMENT.ZIPKIN.TRACING.ENDPOINT: "http://zipkin-server:9411/api/v2/spans"     
+      
+       ## this incase the api-gateway work normally without the configuration custom class
+       ## http://localhost:8765/currency-exchange/currency-exchange/from/USD/to/INR
+       ##http://localhost:8765/currency-conversion/currency-conversion/from/USD/to/INR/quantity/10
+            
+           ## this api run if we use the configuration class
+           ## http://localhost:8765/currency-exchange/from/USD/to/INR
+           ##  http://localhost:8765/currency-conversion/from/USD/to/INR/quantity/100
+  naming-server:
+    image: mina21/mmv3-naming-server:0.0.1-SNAPSHOT
+    ports:
+      - "8761:8761"
+    networks:
+      - currency-network
+
+   ## integration with zipkin docker image3
+  zipkin-server:
+    image: openzipkin/zipkin:2.23
+    mem_limit: 300m
+    ports:
+      - "9411:9411"
+    networks:
+      - currency-network
+    restart: always #Restart if there is a problem starting up
+
+networks:
+  currency-network:
+    driver: bridge

@@ -1,0 +1,34 @@
+  --------------------------- objective -----------------------------
+  we need to install googel SDK to be connect to the googel cloud 
+  and apply our cmd and control all thing about our project in cloud 
+  
+ ---------------------------------------------------------------------------
+ 
+ 3- install googel gcloud locally >> da badl ma a3ml session mn gooel powershell w akon sh8al el browser
+	                                  >> fa ana bastb el tool de 3ndy w a3ml login mn 5llha w akny sha8l 3al consol hnak direct
+   1- download >> https://cloud.google.com/sdk/docs/install 
+   
+   2- after download you can login to your account
+  
+		 gcloud auth login
+			 
+   3- you can intstall kubectl to be manage GKE 
+
+	   - after login to gcloud you can install kubectl by 
+		     [  gcloud components install gke-gcloud-auth-plugin ] 
+			 
+	 - you can check it install or not 
+	        gke-gcloud-auth-plugin --version
+		  
+	 - after we install we can go to our Cluster in GKE by brower in cluster press con 
+	 
+	      gcloud container clusters get-credentials autopilot-cluster-1 --region us-central1 --project glowing-anagram-451505-v3
+	
+	  after that you are in Kubernetes cluster you can write any commad 
+	  
+	           kubectl get all
+			   
+ now you intstall gcloud 
+    1- able to login
+	2- connect to your project 
+	3- connecto to our cluster and apply cmds
