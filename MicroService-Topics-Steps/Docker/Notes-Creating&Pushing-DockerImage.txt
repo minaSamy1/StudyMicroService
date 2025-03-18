@@ -1,0 +1,130 @@
+  - taking about how to create image and how to push it .
+
+ Steps to create image from your springBoot
+   1- using Dockerfile 
+   2- using Maven which called " buildpacks "
+   3- using googel JIB 
+   
+           ----------------  Using Docker File --------------
+ 1  - build and project and generate the jar file
+	2 -Write the docker file 
+	    #Start with a base image containing Java runtime
+		FROM openjdk:21-jdk-slim
+
+		# MAINTAINER instruction is deprecated in favor of using label
+		# MAINTAINER eazybytes.com
+		#Information around who maintains the image
+		LABEL "org.opencontainers.image.authors"="eazybytes.com"
+
+		# Add the application's jar to the image
+		COPY target/accounts-0.0.1-SNAPSHOT.jar accounts-0.0.1-SNAPSHOT.jar
+
+		# execute the application
+		ENTRYPOINT ["java", "-jar", "accounts-0.0.1-SNAPSHOT.jar"]
+		
+	
+	3- Build the image by running docker build to build the image from docker file
+	      - docker build -t ezaybytes/accounts
+		  
+    4- run docker image after it build  
+	   docker run -p 8080:8080 images name 
+	   
+		   
+  ---------------------------------- buildpacks -------------------------------------
+   
+   
+        prerequist : 1- make sure the docker is run 
+		             2- make the maven to work Online its setting in intellj
+					 3- make sure in pom.xml the packaging in ( jar )
+					 4- try to run mnv-install to extract the jar
+					 5- maybe some problem need to restart the IDE or remove caching of IDE or remove .m2/ folder
+	                 6- you may need to define configuration  in pom.xml to define  image name
+					 
+					 <plugin>
+						<groupId>org.springframework.boot</groupId>
+						<artifactId>spring-boot-maven-plugin</artifactId>
+						<configuration>
+							<image>
+								<name>mina21/mmv3-${project.artifactId}:${project.version}</name>
+							</image>
+							<pullPolicy>IF_NOT_PRESENT</pullPolicy>
+						</configuration>				
+					</plugin>
+					 
+	 1- Run cmd >> mvn spring-boot:build-image
+	 
+	 2- after it created it will be find in local docker repo
+		  docker images 
+		  
+		  
+  	 
+	- disadvantage  
+	   1- take long time to build the image
+	   2- docker must be running in your local system 
+	        because this way need to pull some image    paketobuildpacks/builder-
+	
+   - adavtange 
+      - is good for many different programming language  Java , Paython , Go ,...
+      - its low size than docker file 
+      - it's support Caching and securit for yor image	  
+	  		  
+
+		
+     -----------------------------  GoogelJIB  From Maden Course-----------------------------
+	 
+	
+		
+	 1- steps for generate image by JIB For cards MS 
+	    
+	 1-  some modification in Pom.xml 
+           -  <packaging>jar</packaging>
+		   
+		   - adding new plugin 
+				  <plugin>
+						<groupId>com.google.cloud.tools</groupId>
+						<artifactId>jib-maven-plugin</artifactId>
+						<version>3.4.2</version>
+						<configuration>
+							<to>
+								<image>eazybytes/${project.artifactId}:s4</image>
+							</to>
+						</configuration>
+					</plugin>
+	
+	2- use Commandline to build the image 
+	       mvn compile jib:build
+		   
+	3- running the image 
+	   	 3- docker run -p 9000:9000 images name
+		 
+		 
+  Disadvantage:
+     1- Suport only Java language
+	 2- not support the caching and compersing and security during builing image
+	 
+  advantage :
+    1- not need to have or run docker in your local systme
+	2- very fast to  generate the image
+	
+	
+	-------------------------------- Pushing the Image  ---------------------------------	  
+	 3- to push to our dockerhub repo
+	 
+	   1- must tag the image 
+			  docker tag hello-docker:0.0.1-SNAPSHOT  mina21/hello-docker:v1
+	   2- docker login 
+	   3-pushing to our repo  with the taged name
+			   docker push mina21/hello-docker:v1
+			   
+			   
+	4- to test the image incase local or after you pull
+		if you use the local image 
+				docker run -d -p 5004:5000 hello-docker:0.0.1-SNAPSHOT
+		   testing 
+			 http://localhost:5004/
+		   result :
+			 { message: Hello World Java v1 }
+			 
+			 
+	- if you run the image after you pull
+		docker run -d -p 5009:5000 mina21/hello-docker:v1

@@ -14,3 +14,19 @@
 
 4- to remove all stoped containers
   docker container prune -f
+  
+  
+  1- for running docker compse
+     docker compose up - d
+	 
+ 2- for remove docker compose  [  remove the running container ]
+     docker compose down 
+	 
+ 3 for stop docker compse   [ to stop the docker compose running container ]
+     docker compose stop 
+	 
+ 4- for start docker compse    [ to start the docker compose stoped container ]
+     docker compose up 
+	 
+	 
+	 
