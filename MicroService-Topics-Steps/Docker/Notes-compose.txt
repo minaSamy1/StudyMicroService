@@ -6,6 +6,8 @@ Notes While using Docker-compose
 		     			2- or we can use in Environments in side our service in docker compose
 			    environment:
 					EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: "http://naming-server:8761/eureka" 
+					SPRING_PROFILES_ACTIVE: default
+			        SPRING_CONFIG_IMPORT: configserver:http://configserver:8071/
 					
    - incase we found some localhost inside controller or Service where we call anthor api 	
       // incase it work locally
@@ -15,3 +17,70 @@ Notes While using Docker-compose
    
    
    
+    -----------------------------  depend on -------------------------------
+	
+	incase we have service and this services dependes on other services 
+	  for example  accounts  ( depend on Configserver , api-gateway )
+	  when we define this services in docker-compose we depen on to
+	    define which servics 
+		
+		accounts:
+			image: "eazybytes/accounts:s6"
+			container_name: accounts-ms
+			ports:
+			  - "8080:8080"
+			depends_on:
+			  configserver:
+				condition: service_healthy    ### its optional to write conditional 
+				                              ## mean the account service cant start untill the configserver service started
+   
+   --------------------------------- sperated compose configuration  Maden course ----------------
+   
+   2- incase we have many configuration in each service 
+          and there are some common cofiguration between them we can put all 
+		  common configuration in file and define its with the name 
+		  and in main docker-compose call any configuration you wan 
+		  
+		
+		
+	- after then we we have duplication configuration written in each service 
+	  like  
+	      networks:
+				- eazybank	
+		 deploy:
+		  resources:
+			limits:
+			  memory: 700m
+	    environment:
+			  SPRING_PROFILES_ACTIVE: default
+			  SPRING_CONFIG_IMPORT: configserver:http://configserver:8071/
+			  
+	so we define it in config-compose  as below
+           
+
+  microservice-base-config:
+		extends:
+		  service: network-deploy-service
+		deploy:
+		  resources:
+			limits:
+			  memory: 700m
+		environment:
+		  SPRING_RABBITMQ_HOST: "rabbit"
+		   
+	
+			  
+	so instead we add the above configuratioin in each service we will define 
+	 all common configuration in sperated compose and in our docker compose 
+	  will call or get this configuration from the spereated file 
+	  by calling which config name you need  for example we need to 
+	  call configuration under the account 
+	  
+	 accounts:
+         .........
+		extends:
+		  file: common-config.yml            ## going to external config-compse
+		  service: microservice-configserver-config      ## load the configuration which name "microservice-configserver-config "
+		  
+	Full example  :
+  	https://github.com/eazybytes/microservices/tree/3.4.1/section6/v2-spring-cloud-config/docker-compose/default
