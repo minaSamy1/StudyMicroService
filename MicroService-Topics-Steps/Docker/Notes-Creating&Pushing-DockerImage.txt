@@ -92,10 +92,15 @@
 					</plugin>
 	
 	2- use Commandline to build the image 
-	       mvn compile jib:build
-		   
+	      
+		 mvn compile jib:build
+		   	   
+               notes: the command builds the Docker image and pushes it to a container registry
+		
+              notes2 :  1-the version of plugin must be update like spring version
+           	  
 	3- running the image 
-	   	 3- docker run -p 9000:9000 images name
+	   	 3-   docker run --name cards -p 9000:9000 mina21/cards:s4
 		 
 		 
   Disadvantage:
