@@ -42,8 +42,18 @@ here we will define how to use it by name-server using Eurka
 2- in application.properities
       eureka.client.serviceUrl.defaultZone=http://localhost:8761/eureka
       eureka.instance.lease-renewal-interval-in-seconds=0
+      eureka.client.fetchRegistry=true
+      eureka.client.registerWithEureka=true
 
 
+if you need to make more decription about your services 
+		  info.app.name=accounts
+		  info.app.description=Eazy Bank Accounts Application
+		  info.app.version=1.0.0
+		
+		management.endpoints.web.exposure.include=*
+		management.endpoint.shutdown.access=unrestricted    ## this to make register detect when it shutdown
+		management.info.env.enabled=true
 
   now after you restart you project services  
     if you open  localhost:8761      you will find your services it's already registered successfully
